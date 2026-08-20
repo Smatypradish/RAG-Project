@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Bot, AlertTriangle, ChevronDown, ChevronUp, CheckCircle, HelpCircle, XCircle, Clock } from 'lucide-react';
+import { AlertTriangle, Bot, CheckCircle, ChevronDown, ChevronUp, Clock, HelpCircle, User, XCircle } from 'lucide-react';
 import SourceCard from './SourceCard';
 
 const MessageBubble = ({ message }) => {
@@ -8,101 +8,62 @@ const MessageBubble = ({ message }) => {
   const getConfidenceDetails = (confidence) => {
     switch (confidence) {
       case 'Verified':
-        return { color: 'text-green-700 bg-green-50 border-green-200', icon: <CheckCircle size={14} className="mr-1" /> };
+        return { color: 'border-[#b9dd92] bg-[#effadc] text-[#446b19]', icon: <CheckCircle size={14} /> };
       case 'Conflicting':
-        return { color: 'text-yellow-700 bg-yellow-50 border-yellow-200', icon: <AlertTriangle size={14} className="mr-1" /> };
+        return { color: 'border-[#f2d68b] bg-[#fff9df] text-[#8a6515]', icon: <AlertTriangle size={14} /> };
       case 'Outdated':
-        return { color: 'text-orange-700 bg-orange-50 border-orange-200', icon: <Clock size={14} className="mr-1" /> };
+        return { color: 'border-[#f2c49a] bg-[#fff1e7] text-[#a4531e]', icon: <Clock size={14} /> };
       case 'Insufficient':
-        return { color: 'text-red-700 bg-red-50 border-red-200', icon: <XCircle size={14} className="mr-1" /> };
-      case 'Not Available':
+        return { color: 'border-[#efb9b0] bg-[#fff0ed] text-[#a33e35]', icon: <XCircle size={14} /> };
       default:
-        return { color: 'text-gray-600 bg-gray-100 border-gray-200', icon: <HelpCircle size={14} className="mr-1" /> };
+        return { color: 'border-[#d5e0da] bg-[#f0f5f2] text-[#547067]', icon: <HelpCircle size={14} /> };
     }
   };
 
   if (message.isUser) {
     return (
-      <div className="flex w-full justify-end message-appear">
-        <div className="max-w-[85%] md:max-w-[75%] rounded-2xl p-4 bg-indigo-600 text-white rounded-br-none shadow-sm flex flex-col">
-          <div className="flex items-center space-x-2 mb-1 justify-end opacity-80">
-            <span className="text-xs font-medium">You</span>
-            <User size={14} />
-          </div>
-          <div className="whitespace-pre-wrap">{message.text}</div>
+      <article className="ml-auto flex max-w-[88%] justify-end gap-3 message-appear sm:max-w-[72%]">
+        <div className="rounded-2xl rounded-tr-sm bg-[#12302d] px-5 py-4 text-white shadow-sm">
+          <p className="whitespace-pre-wrap text-sm leading-6">{message.text}</p>
         </div>
-      </div>
+        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#d9ff75] text-[#12302d]"><User size={16} /></div>
+      </article>
     );
   }
 
-  const confDetails = message.confidence ? getConfidenceDetails(message.confidence) : null;
+  const confidence = message.confidence ? getConfidenceDetails(message.confidence) : null;
 
   return (
-    <div className="flex w-full justify-start message-appear">
-      <div className={`max-w-[90%] md:max-w-[85%] rounded-2xl p-4 bg-white border ${message.isError ? 'border-red-300' : 'border-gray-200'} text-gray-800 rounded-bl-none shadow-sm flex flex-col`}>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2 text-indigo-600">
-            <Bot size={16} />
-            <span className="text-xs font-semibold uppercase tracking-wider">Helpdesk AI</span>
-          </div>
-          {message.classification && (
-            <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
-              {message.classification}
-            </span>
-          )}
+    <article className="flex max-w-[94%] gap-3 message-appear sm:max-w-[84%]">
+      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#dfece5] text-[#265449]"><Bot size={17} /></div>
+      <div className={`min-w-0 flex-1 rounded-2xl rounded-tl-sm border bg-white p-5 shadow-sm ${message.isError ? 'border-[#efb9b0]' : 'border-[#dce5df]'}`}>
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-[0.13em] text-[#3a6659]">Academic helpdesk</span>
+          {message.classification && <span className="rounded-full bg-[#edf4ef] px-2 py-0.5 text-[10px] font-semibold text-[#688078]">{message.classification}</span>}
         </div>
-        
-        <div className={`whitespace-pre-wrap ${message.isError ? 'text-red-600' : 'text-gray-800'}`}>
-          {message.text}
-        </div>
+        <p className={`whitespace-pre-wrap text-sm leading-6 ${message.isError ? 'text-[#a33e35]' : 'text-[#27443d]'}`}>{message.text}</p>
 
-        {confDetails && (
-          <div className="mt-4 pt-3 border-t border-gray-100">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${confDetails.color}`}>
-                {confDetails.icon}
-                Confidence: {message.confidence}
-              </span>
+        {(confidence || message.sources?.length > 0) && <div className="mt-5 border-t border-[#e6ede9] pt-4">
+          {confidence && <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${confidence.color}`}>{confidence.icon} {message.confidence}</span>}
+
+          {message.conflicts?.length > 0 && (
+            <div className="mt-3">
+              <button onClick={() => setShowConflicts(!showConflicts)} className="flex w-full items-center gap-2 rounded-xl border border-[#f2d68b] bg-[#fff9df] px-3 py-2 text-left text-xs font-semibold text-[#8a6515] transition hover:bg-[#fff4c5]">
+                <AlertTriangle size={14} />
+                Review conflicting information
+                {showConflicts ? <ChevronUp size={14} className="ml-auto" /> : <ChevronDown size={14} className="ml-auto" />}
+              </button>
+              {showConflicts && <div className="mt-2 space-y-2 rounded-xl border border-[#f7e6ad] bg-[#fffdf1] p-3 text-xs leading-5 text-[#6c5a27]">{message.conflicts.map((conflict, index) => <p key={index}>{conflict}</p>)}</div>}
             </div>
+          )}
 
-            {message.conflicts && message.conflicts.length > 0 && (
-              <div className="mb-3">
-                <button 
-                  onClick={() => setShowConflicts(!showConflicts)}
-                  className="flex items-center text-xs font-medium text-yellow-700 hover:text-yellow-800 bg-yellow-50 px-3 py-1.5 rounded-md w-full border border-yellow-200 transition-colors"
-                >
-                  <AlertTriangle size={14} className="mr-1.5" />
-                  <span>View conflicting information found</span>
-                  {showConflicts ? <ChevronUp size={14} className="ml-auto" /> : <ChevronDown size={14} className="ml-auto" />}
-                </button>
-                
-                {showConflicts && (
-                  <div className="mt-2 p-3 bg-yellow-50/50 border border-yellow-100 rounded-md text-sm text-gray-700 space-y-2">
-                    {message.conflicts.map((conflict, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5 shrink-0"></div>
-                        <p>{conflict}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {message.sources && message.sources.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Sources</h4>
-                <div className="flex flex-wrap gap-2">
-                  {message.sources.map((source, idx) => (
-                    <SourceCard key={idx} source={source} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          {message.sources?.length > 0 && <div className="mt-4">
+            <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.13em] text-[#70877e]">Supporting documents</h3>
+            <div className="flex flex-wrap gap-2">{message.sources.map((source, index) => <SourceCard key={index} source={source} />)}</div>
+          </div>}
+        </div>}
       </div>
-    </div>
+    </article>
   );
 };
 

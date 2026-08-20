@@ -1,30 +1,19 @@
-import { Link, useLocation } from 'react-router-dom';
 import { GraduationCap, MessageSquare, Settings } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const location = useLocation();
+  const linkClasses = (isActive) => `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${isActive ? 'bg-[#e6f4ed] text-[#234f43]' : 'text-[#647972] hover:bg-[#f0f5f2] hover:text-[#234f43]'}`;
 
   return (
-    <nav className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
-      <Link to="/" className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-colors">
-        <GraduationCap size={28} />
-        <span className="font-bold text-xl text-gray-900">College Helpdesk</span>
+    <nav className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-[#dce5df] bg-[#fbfcf8] px-4 sm:px-6">
+      <Link to="/" className="flex items-center gap-2 text-[#14322f]">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#12302d] text-[#d9ff75]"><GraduationCap size={20} /></span>
+        <span className="hidden text-base font-bold tracking-tight sm:inline">College helpdesk</span>
       </Link>
-      <div className="flex items-center space-x-6">
-        <Link 
-          to="/" 
-          className={`flex items-center space-x-1 ${location.pathname === '/' ? 'text-indigo-600 font-medium' : 'text-gray-600 hover:text-indigo-600'}`}
-        >
-          <MessageSquare size={18} />
-          <span>Chat</span>
-        </Link>
-        <Link 
-          to="/admin" 
-          className={`flex items-center space-x-1 ${location.pathname === '/admin' ? 'text-indigo-600 font-medium' : 'text-gray-600 hover:text-indigo-600'}`}
-        >
-          <Settings size={18} />
-          <span>Admin</span>
-        </Link>
+      <div className="flex items-center gap-1">
+        <Link to="/" className={linkClasses(location.pathname === '/')}><MessageSquare size={17} /><span className="hidden sm:inline">Helpdesk</span></Link>
+        <Link to="/admin" className={linkClasses(location.pathname === '/admin')}><Settings size={17} /><span className="hidden sm:inline">Admin</span></Link>
       </div>
     </nav>
   );
