@@ -1,73 +1,27 @@
 import { useState } from 'react';
-import { FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText } from 'lucide-react';
 
 const SourceCard = ({ source }) => {
   const [expanded, setExpanded] = useState(false);
-
-  // Status badge colors
   const statusColors = {
-    active: 'bg-green-100 text-green-800 border-green-200',
-    superseded: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    withdrawn: 'bg-red-100 text-red-800 border-red-200'
+    active: 'border-[#b9dd92] bg-[#effadc] text-[#446b19]',
+    superseded: 'border-[#f2d68b] bg-[#fff9df] text-[#8a6515]',
+    withdrawn: 'border-[#efb9b0] bg-[#fff0ed] text-[#a33e35]',
   };
-
-  const authorityLabels = {
-    1: 'UGC/Government',
-    2: 'University',
-    3: 'College Core',
-    4: 'Department',
-    5: 'General'
-  };
-
-  const statusStyle = statusColors[source.status?.toLowerCase()] || 'bg-gray-100 text-gray-800 border-gray-200';
-  const authorityLabel = source.authority_level 
-    ? `${authorityLabels[source.authority_level] || 'Unknown'} (L${source.authority_level})` 
-    : 'Unknown Authority';
+  const authorityLabels = { 1: 'UGC/Government', 2: 'University', 3: 'College Core', 4: 'Department', 5: 'General' };
+  const statusStyle = statusColors[source.status?.toLowerCase()] || 'border-[#d5e0da] bg-[#f0f5f2] text-[#547067]';
+  const authorityLabel = source.authority_level ? `${authorityLabels[source.authority_level] || 'Unknown'} (L${source.authority_level})` : 'Unknown authority';
 
   return (
-    <div className="flex flex-col bg-gray-50 border border-gray-200 rounded-lg overflow-hidden w-full max-w-sm text-sm hover:border-gray-300 transition-colors">
-      <div 
-        className="p-3 cursor-pointer flex items-start justify-between"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="flex items-start space-x-2 overflow-hidden">
-          <FileText size={16} className="text-indigo-500 mt-0.5 shrink-0" />
-          <div className="flex flex-col">
-            <span className="font-semibold text-gray-800 truncate" title={source.document_name}>
-              {source.document_name}
-            </span>
-            <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-500">
-              {source.page && <span>Pg {source.page}</span>}
-              {source.page && source.section && <span>•</span>}
-              {source.section && <span>Sec: {source.section}</span>}
-            </div>
-          </div>
-        </div>
-        <div className="ml-2 shrink-0">
-          {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-        </div>
-      </div>
-      
-      {expanded && (
-        <div className="px-3 pb-3 pt-1 border-t border-gray-200/60 bg-white">
-          <div className="flex flex-wrap gap-2 mb-3 mt-2">
-            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${statusStyle} uppercase font-semibold`}>
-              {source.status || 'Unknown'}
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded border bg-blue-50 text-blue-800 border-blue-200">
-              {authorityLabel}
-            </span>
-            {source.effective_date && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded border bg-gray-100 text-gray-700 border-gray-200">
-                Effective: {source.effective_date}
-              </span>
-            )}
-          </div>
-          <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 italic break-words line-clamp-6">
-            "{source.text || 'Text snippet not available.'}"
-          </div>
-        </div>
-      )}
+    <div className="w-full max-w-sm overflow-hidden rounded-xl border border-[#dce5df] bg-[#f7faf8] text-sm transition hover:border-[#aac6ba]">
+      <button onClick={() => setExpanded(!expanded)} className="flex w-full items-start justify-between gap-3 p-3 text-left">
+        <span className="flex min-w-0 items-start gap-2">
+          <FileText size={16} className="mt-0.5 shrink-0 text-[#3a7463]" />
+          <span className="min-w-0"><span className="block truncate font-semibold text-[#315148]">{source.document_name}</span><span className="mt-1 flex flex-wrap gap-1 text-xs text-[#71867f]">{source.page && <span>Page {source.page}</span>}{source.section && <span>{source.page && '· '} {source.section}</span>}</span></span>
+        </span>
+        {expanded ? <ChevronUp size={16} className="shrink-0 text-[#7c9189]" /> : <ChevronDown size={16} className="shrink-0 text-[#7c9189]" />}
+      </button>
+      {expanded && <div className="border-t border-[#dce5df] bg-white px-3 pb-3 pt-2"><div className="mb-3 flex flex-wrap gap-2"><span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${statusStyle}`}>{source.status || 'Unknown'}</span><span className="rounded-full border border-[#c9ded5] bg-[#eef7f2] px-2 py-0.5 text-[10px] font-bold text-[#42645a]">{authorityLabel}</span>{source.effective_date && <span className="rounded-full bg-[#f0f4f2] px-2 py-0.5 text-[10px] font-semibold text-[#60766e]">Effective {source.effective_date}</span>}</div><p className="rounded-lg bg-[#f7faf8] p-2 text-xs italic leading-5 text-[#61766f]">“{source.text || 'Text snippet not available.'}”</p></div>}
     </div>
   );
 };
