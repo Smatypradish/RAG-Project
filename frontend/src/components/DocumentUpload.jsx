@@ -11,7 +11,7 @@ const DocumentUpload = ({ onUploadSuccess }) => {
     effective_date: new Date().toISOString().split('T')[0],
     expiry_date: '',
     status: 'active',
-    supersedes_id: '',
+    supersedes_document_id: '',
     revision_reason: ''
   });
   
@@ -55,7 +55,7 @@ const DocumentUpload = ({ onUploadSuccess }) => {
       setFormData(prev => ({
         ...prev,
         version: '1.0',
-        supersedes_id: '',
+        supersedes_document_id: '',
         revision_reason: ''
       }));
       // Reset file input
@@ -188,8 +188,8 @@ const DocumentUpload = ({ onUploadSuccess }) => {
           <label className="block text-sm font-medium text-gray-700 mb-1">Supersedes Doc ID <span className="text-gray-400 font-normal">(Optional)</span></label>
           <input
             type="number"
-            name="supersedes_id"
-            value={formData.supersedes_id}
+            name="supersedes_document_id"
+            value={formData.supersedes_document_id}
             onChange={handleInputChange}
             placeholder="Document ID this replaces"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"

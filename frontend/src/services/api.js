@@ -19,7 +19,7 @@ api.interceptors.request.use(
 );
 
 export const sendMessage = async (question, sessionId) => {
-  const response = await api.post('/chat', { question, session_id: sessionId });
+  const response = await api.post('/chat/', { question, session_id: sessionId });
   return response.data;
 };
 
@@ -33,7 +33,7 @@ export const uploadDocument = async (formData) => {
 };
 
 export const getDocuments = async () => {
-  const response = await api.get('/documents');
+  const response = await api.get('/documents/');
   return response.data;
 };
 
