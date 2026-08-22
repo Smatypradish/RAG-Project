@@ -2,6 +2,77 @@ import { useState } from 'react';
 import { AlertTriangle, Bot, CheckCircle, ChevronDown, ChevronUp, Clock, HelpCircle, User, XCircle } from 'lucide-react';
 import SourceCard from './SourceCard';
 
+const getResponseBlocks = (text = '') => {
+  const blocks = [];
+  let paragraph = [];
+  let list = null;
+
+  const flushParagraph = () => {
+    if (paragraph.length > 0) {
+      blocks.push({ type: 'paragraph', lines: paragraph });
+      paragraph = [];
+    }
+  };
+
+  const flushList = () => {
+    if (list) {
+      blocks.push(list);
+      list = null;
+    }
+  };
+
+  text.split('\n').forEach((line) => {
+    const trimmedLine = line.trim();
+    const headingMatch = trimmedLine.match(/^#{1,3}\s+(.+)$/);
+    const orderedMatch = trimmedLine.match(/^\d+[.)]\s+(.+)$/);
+    const unorderedMatch = trimmedLine.match(/^(?:[-*•])\s+(.+)$/);
+
+    if (!trimmedLine) {
+      flushParagraph();
+      flushList();
+    } else if (headingMatch) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: 'heading', text: headingMatch[1] });
+    } else if (orderedMatch || unorderedMatch) {
+      flushParagraph();
+      const type = orderedMatch ? 'ordered-list' : 'unordered-list';
+      if (!list || list.type !== type) {
+        flushList();
+        list = { type, items: [] };
+      }
+      list.items.push(orderedMatch ? orderedMatch[1] : unorderedMatch[1]);
+    } else {
+      flushList();
+      paragraph.push(trimmedLine);
+    }
+  });
+
+  flushParagraph();
+  flushList();
+  return blocks;
+};
+
+const StructuredResponse = ({ text }) => (
+  <div className="space-y-3 text-sm leading-6 text-[#27443d]">
+    {getResponseBlocks(text).map((block, index) => {
+      if (block.type === 'heading') {
+        return <h3 key={index} className="pt-1 text-base font-bold leading-6 text-[#14322f]">{block.text}</h3>;
+      }
+
+      if (block.type === 'ordered-list') {
+        return <ol key={index} className="list-decimal space-y-2 pl-5 marker:font-semibold marker:text-[#51756a]">{block.items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{item}</li>)}</ol>;
+      }
+
+      if (block.type === 'unordered-list') {
+        return <ul key={index} className="list-disc space-y-2 pl-5 marker:text-[#7fa89a]">{block.items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{item}</li>)}</ul>;
+      }
+
+      return <p key={index}>{block.lines.join(' ')}</p>;
+    })}
+  </div>
+);
+
 const MessageBubble = ({ message }) => {
   const [showConflicts, setShowConflicts] = useState(false);
 
@@ -41,7 +112,7 @@ const MessageBubble = ({ message }) => {
           <span className="text-xs font-bold uppercase tracking-[0.13em] text-[#3a6659]">Academic helpdesk</span>
           {message.classification && <span className="rounded-full bg-[#edf4ef] px-2 py-0.5 text-[10px] font-semibold text-[#688078]">{message.classification}</span>}
         </div>
-        <p className={`whitespace-pre-wrap text-sm leading-6 ${message.isError ? 'text-[#a33e35]' : 'text-[#27443d]'}`}>{message.text}</p>
+        {message.isError ? <p className="text-sm leading-6 text-[#a33e35]">{message.text}</p> : <StructuredResponse text={message.text} />}
 
         {(confidence || message.sources?.length > 0) && <div className="mt-5 border-t border-[#e6ede9] pt-4">
           {confidence && <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${confidence.color}`}>{confidence.icon} {message.confidence}</span>}

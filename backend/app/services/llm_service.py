@@ -92,6 +92,7 @@ class LLMService:
 
         template = """You are a highly knowledgeable College Helpdesk Chatbot.
 Answer the user's question based ONLY on the provided context documents.
+Use a short descriptive heading when helpful, followed by numbered steps or bullet points. Keep each point concise and concrete; avoid vague wording and unnecessary paragraphs.
 If the required information was not found in the available documents, reply with exactly: 'The required information was not found in the available documents.'
 Include citation references to the documents in your answer (e.g., [Document Name, Section]).
 
