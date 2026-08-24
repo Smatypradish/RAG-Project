@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { AlertTriangle, Bot, CheckCircle, ChevronDown, ChevronUp, Clock, HelpCircle, User, XCircle } from 'lucide-react';
 import SourceCard from './SourceCard';
 
+const formatInlineText = (text) => text.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+  if (part.startsWith('**') && part.endsWith('**')) {
+    return <strong key={index} className="font-semibold text-[#14322f]">{part.slice(2, -2)}</strong>;
+  }
+  return part;
+});
+
 const getResponseBlocks = (text = '') => {
   const blocks = [];
   let paragraph = [];
@@ -24,16 +31,17 @@ const getResponseBlocks = (text = '') => {
   text.split('\n').forEach((line) => {
     const trimmedLine = line.trim();
     const headingMatch = trimmedLine.match(/^#{1,3}\s+(.+)$/);
+    const boldHeadingMatch = trimmedLine.match(/^\*\*(.+?)\*\*:?$/);
     const orderedMatch = trimmedLine.match(/^\d+[.)]\s+(.+)$/);
     const unorderedMatch = trimmedLine.match(/^(?:[-*•])\s+(.+)$/);
 
     if (!trimmedLine) {
       flushParagraph();
       flushList();
-    } else if (headingMatch) {
+    } else if (headingMatch || boldHeadingMatch) {
       flushParagraph();
       flushList();
-      blocks.push({ type: 'heading', text: headingMatch[1] });
+      blocks.push({ type: 'heading', text: headingMatch?.[1] || boldHeadingMatch[1].replace(/:$/, '') });
     } else if (orderedMatch || unorderedMatch) {
       flushParagraph();
       const type = orderedMatch ? 'ordered-list' : 'unordered-list';
@@ -57,18 +65,18 @@ const StructuredResponse = ({ text }) => (
   <div className="space-y-3 text-sm leading-6 text-[#27443d]">
     {getResponseBlocks(text).map((block, index) => {
       if (block.type === 'heading') {
-        return <h3 key={index} className="pt-1 text-base font-bold leading-6 text-[#14322f]">{block.text}</h3>;
+        return <h3 key={index} className="pt-1 text-base font-bold leading-6 text-[#14322f]">{formatInlineText(block.text)}</h3>;
       }
 
       if (block.type === 'ordered-list') {
-        return <ol key={index} className="list-decimal space-y-2 pl-5 marker:font-semibold marker:text-[#51756a]">{block.items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{item}</li>)}</ol>;
+        return <ol key={index} className="list-decimal space-y-2 pl-5 marker:font-semibold marker:text-[#51756a]">{block.items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{formatInlineText(item)}</li>)}</ol>;
       }
 
       if (block.type === 'unordered-list') {
-        return <ul key={index} className="list-disc space-y-2 pl-5 marker:text-[#7fa89a]">{block.items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{item}</li>)}</ul>;
+        return <ul key={index} className="list-disc space-y-2 pl-5 marker:text-[#7fa89a]">{block.items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{formatInlineText(item)}</li>)}</ul>;
       }
 
-      return <p key={index}>{block.lines.join(' ')}</p>;
+      return <p key={index}>{formatInlineText(block.lines.join(' '))}</p>;
     })}
   </div>
 );
