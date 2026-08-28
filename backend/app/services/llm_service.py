@@ -57,29 +57,45 @@ class LLMService:
             self.llm = None
 
     def _fallback_extractive_answer(self, prompt: str, context: str, conflicts_str: str = "") -> str:
-        """Deterministic fallback when no LLM API key is configured or offline."""
+        """Deterministic structural fallback when no LLM API key is configured or offline."""
+        import re
         if not context.strip():
             return "The required information was not found in the available documents."
         
-        # Clean up lines from context
-        snippets = []
+        points = []
         for block in context.split("\n\n"):
             lines = [l.strip() for l in block.split("\n") if l.strip()]
             if len(lines) >= 2:
-                header = lines[0]
-                body = " ".join(lines[1:])
-                # Truncate if very long
-                if len(body) > 300:
-                    body = body[:297] + "..."
-                snippets.append(f"{body} {header}")
-            elif lines:
-                snippets.append(lines[0])
+                content = " ".join(lines[1:])
                 
-        answer = "Based on official institutional records:\n\n"
-        answer += "\n\n".join([f"• {s}" for s in snippets[:2]])
-        
+                # Split sentences cleanly without breaking numbers like 9.0 or 1.1
+                sentences = re.split(r'(?<=[a-zA-Z\)])\.\s+(?=[A-Z0-9])', content)
+                for s in sentences:
+                    s_clean = s.strip()
+                    if s_clean.endswith('.'):
+                        s_clean = s_clean[:-1]
+                    if len(s_clean) > 20 and not s_clean.isupper():
+                        points.append(s_clean)
+            elif lines and len(lines[0]) > 20:
+                points.append(lines[0])
+                
+        # Deduplicate while preserving order
+        unique_points = []
+        for p in points:
+            if not any(p[:35].lower() in up.lower() for up in unique_points):
+                unique_points.append(p)
+            if len(unique_points) >= 4:
+                break
+
+        if not unique_points:
+            return "The required information was not found in the available documents."
+
+        answer = "**Direct Summary:**\n"
+        for p in unique_points:
+            answer += f"• {p}.\n"
+            
         if conflicts_str.strip():
-            answer += f"\n\n[Policy Notice]: {conflicts_str.strip()}"
+            answer += f"\n**Policy Notice:**\n• {conflicts_str.strip()}\n"
             
         return answer
 
@@ -90,10 +106,20 @@ class LLMService:
         if not self.llm:
             return self._fallback_extractive_answer(prompt, context, conflicts_str)
 
-        template = """You are a highly knowledgeable College Helpdesk Chatbot.
-Answer the user's question based ONLY on the provided context documents.
-If the required information was not found in the available documents, reply with exactly: 'The required information was not found in the available documents.'
-Include citation references to the documents in your answer (e.g., [Document Name, Section]).
+        template = """You are an official College Helpdesk Chatbot.
+Answer the student's question based ONLY on the provided context documents.
+
+RESPONSE RULES:
+1. Keep the answer STRUCTURAL, SHORT, and CLEAR.
+2. DO NOT write long paragraphs or vague filler words.
+3. Use this structure:
+   - **Direct Answer:** 1 short sentence directly answering the question.
+   - **Key Rules / Details:**
+     • Use bullet points for specific numbers, percentages, dates, or criteria.
+     • Keep each bullet point to 1-2 lines.
+   - **Important Note:** (Only if there are penalties, fees, deadlines, or exceptions).
+4. If there is a policy conflict or revision, state the latest active rule clearly.
+5. If the required information is not found in the documents, reply with exactly: 'The required information was not found in the available documents.'
 
 Context Documents:
 {context}
@@ -101,8 +127,8 @@ Context Documents:
 Conflict Information (if any):
 {conflicts_str}
 
-Question: {prompt}
-Answer:"""
+Student Question: {prompt}
+Structured Answer:"""
         
         prompt_template = PromptTemplate(
             input_variables=["context", "conflicts_str", "prompt"],

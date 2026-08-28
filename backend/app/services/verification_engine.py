@@ -5,12 +5,13 @@ from app.models import SourceEvidence
 
 def calculate_reliability_score(chunk_result: Dict[str, Any], db_doc: DocumentRecord) -> float:
     raw_distance = chunk_result.get('distance', 1.5)
-    # Cosine / L2 distance normalization for MiniLM
-    semantic_relevance = max(0.0, min(1.0, 1.0 - (raw_distance / 1.25)))
     
-    # Gating: If semantic relevance is low, the document is unrelated regardless of authority
-    if semantic_relevance < 0.40:
-        return round(semantic_relevance * 0.3, 3)
+    # ChromaDB L2 distance normalization for all-MiniLM-L6-v2 (0.0 to 1.7 scale)
+    semantic_relevance = max(0.0, min(1.0, 1.0 - (raw_distance / 1.6)))
+    
+    # Gating: If distance is very high (> 1.35), the chunk is out-of-domain
+    if raw_distance > 1.35 or semantic_relevance < 0.20:
+        return round(semantic_relevance * 0.15, 3)
         
     authority_normalized = min(5, max(1, db_doc.authority_level)) / 5.0
     
@@ -18,7 +19,7 @@ def calculate_reliability_score(chunk_result: Dict[str, Any], db_doc: DocumentRe
     if db_doc.status == 'active':
         validity_score = 1.0
     elif db_doc.status == 'superseded':
-        validity_score = 0.35
+        validity_score = 0.40
         
     recency_score = 0.5
     if db_doc.effective_date:
@@ -41,12 +42,12 @@ def classify_evidence(scored_chunks: List[SourceEvidence], conflict_info: List[A
         
     top_score = scored_chunks[0].relevance_score
     
-    if top_score < 0.25:
+    if top_score < 0.20:
         return "not_available"
-    if top_score < 0.45:
+    if top_score < 0.40:
         return "insufficient"
         
-    active_sources = [c for c in scored_chunks if c.status == 'active' and c.relevance_score >= 0.40]
+    active_sources = [c for c in scored_chunks if c.status == 'active' and c.relevance_score >= 0.35]
     
     if not active_sources:
         return "outdated"
@@ -54,7 +55,7 @@ def classify_evidence(scored_chunks: List[SourceEvidence], conflict_info: List[A
     if conflict_info:
         return "conflicting"
         
-    if top_score >= 0.65:
+    if top_score >= 0.55:
         return "verified"
         
     return "insufficient"

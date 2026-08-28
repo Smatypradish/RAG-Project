@@ -35,7 +35,7 @@ const ChatInterface = ({ session, onConversationChange, onNewChat }) => {
         id: Date.now() + 1,
         text: response.answer,
         isUser: false,
-        confidence: response.confidence,
+        confidence_score: response.confidence_score,
         classification: response.classification,
         sources: response.sources || [],
         conflicts: response.conflicts || [],
