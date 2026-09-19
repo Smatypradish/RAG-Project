@@ -195,6 +195,7 @@ def upload_document(
 
     return doc_record
 
+@router.get("", response_model=List[DocumentResponse], include_in_schema=False)
 @router.get("/", response_model=List[DocumentResponse])
 def list_documents(db: Session = Depends(get_db)):
     return db.query(DocumentRecord).order_by(DocumentRecord.upload_date.desc()).all()

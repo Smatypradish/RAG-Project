@@ -49,7 +49,9 @@ export const uploadDocument = async (formData) => {
 };
 
 export const getDocuments = async () => {
-  const response = await api.get('/documents');
+  // Trailing slash matters: without it FastAPI issues a 307 redirect,
+  // and the browser drops the Authorization header on redirect (401).
+  const response = await api.get('/documents/');
   return response.data;
 };
 
