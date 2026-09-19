@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User } from 'lucide-react';
 import { adminLogin } from '../services/api';
@@ -9,6 +9,12 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Landing on the login page always clears any stale/expired session token,
+  // so old tokens can never cause a redirect loop.
+  useEffect(() => {
+    localStorage.removeItem('token');
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
