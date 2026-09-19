@@ -10,7 +10,7 @@ const promptSuggestions = [
 ];
 
 const ChatInterface = ({ session, onConversationChange, onNewChat }) => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(session.messages || []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -19,6 +19,21 @@ const ChatInterface = ({ session, onConversationChange, onNewChat }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Keep the parent session (title, preview, full messages) in sync so the
+  // enquiry can be reopened from the sidebar and survives page refreshes.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const firstUserMessage = messages.find((message) => message.isUser);
+    const lastUserMessage = [...messages].reverse().find((message) => message.isUser);
+    onConversationChange({
+      ...session,
+      title: session.title === 'New enquiry' ? (firstUserMessage?.text || session.title) : session.title,
+      preview: lastUserMessage?.text || session.preview,
+      updatedAt: Date.now(),
+      messages,
+    });
+  }, [messages]);
+
   const handleSend = async (event, suggestedQuestion) => {
     event?.preventDefault();
     const userText = (suggestedQuestion || input).trim();
@@ -26,7 +41,6 @@ const ChatInterface = ({ session, onConversationChange, onNewChat }) => {
 
     setInput('');
     setMessages((currentMessages) => [...currentMessages, { id: Date.now(), text: userText, isUser: true }]);
-    onConversationChange(userText);
     setIsLoading(true);
 
     try {
@@ -41,9 +55,12 @@ const ChatInterface = ({ session, onConversationChange, onNewChat }) => {
         conflicts: response.conflicts || [],
       }]);
     } catch (error) {
+      const offline = !error.response;
       setMessages((currentMessages) => [...currentMessages, {
         id: Date.now() + 1,
-        text: 'I could not reach the document service just now. Please try your question again in a moment.',
+        text: offline
+          ? 'The helpdesk server is not reachable. Make sure the backend is running (uvicorn on port 8000), then try again.'
+          : `The server returned an error (${error.response.status}). Please try your question again.`,
         isUser: false,
         isError: true,
       }]);

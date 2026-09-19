@@ -1,32 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Archive, BookOpen, ChevronRight, Clock3, Plus, Sparkles } from 'lucide-react';
 import ChatInterface from '../components/ChatInterface';
+
+const STORAGE_KEY = 'rag_chat_sessions';
+const MAX_SESSIONS = 20;
 
 const createSession = () => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   title: 'New enquiry',
   updatedAt: Date.now(),
   preview: 'Start a document-based conversation',
+  messages: [],
 });
+
+const loadSessions = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+};
 
 const ChatPage = () => {
   const [activeSession, setActiveSession] = useState(createSession);
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState(loadSessions);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions.slice(0, MAX_SESSIONS)));
+    } catch {
+      // Storage full or unavailable — history simply won't persist.
+    }
+  }, [sessions]);
 
   const handleNewChat = () => {
     setActiveSession(createSession());
   };
 
-  const updateConversation = (question) => {
-    const details = {
-      ...activeSession,
-      title: activeSession.title === 'New enquiry' ? question : activeSession.title,
-      preview: question,
-      updatedAt: Date.now(),
-    };
-
+  const updateConversation = (details) => {
     setActiveSession(details);
-    setSessions((currentSessions) => [details, ...currentSessions.filter((session) => session.id !== details.id)]);
+    setSessions((currentSessions) =>
+      [details, ...currentSessions.filter((session) => session.id !== details.id)].slice(0, MAX_SESSIONS)
+    );
   };
 
   return (
