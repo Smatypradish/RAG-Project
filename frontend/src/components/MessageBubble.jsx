@@ -46,7 +46,7 @@ const MessageBubble = ({ message }) => {
           {confidence && (
             <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${confidence.color}`}>
               {confidence.icon} {confidence.label}
-              {message.confidence_score !== undefined && ` (${Math.round(message.confidence_score * 100)}%)`}
+              {message.confidence_score !== undefined && ` · relevance ${Math.round(message.confidence_score * 100)}%`}
             </span>
           )}
         </div>

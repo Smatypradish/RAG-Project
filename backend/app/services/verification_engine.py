@@ -15,16 +15,24 @@ def calculate_reliability_score(chunk_result: Dict[str, Any], db_doc: DocumentRe
         
     authority_normalized = min(5, max(1, db_doc.authority_level)) / 5.0
     
+    today = date.today()
+    # A document is only fully valid while active and inside its validity window.
     validity_score = 0.0
     if db_doc.status == 'active':
         validity_score = 1.0
+        if db_doc.effective_date and db_doc.effective_date > today:
+            validity_score = 0.3  # published but not yet in force
+        if db_doc.expiry_date and db_doc.expiry_date < today:
+            validity_score = 0.2  # expired
     elif db_doc.status == 'superseded':
         validity_score = 0.40
         
     recency_score = 0.5
     if db_doc.effective_date:
-        days_old = (date.today() - db_doc.effective_date).days
-        if days_old <= 365 * 2:
+        days_old = (today - db_doc.effective_date).days
+        if days_old < 0:
+            recency_score = 0.3  # future effective date
+        elif days_old <= 365 * 2:
             recency_score = 1.0
         elif days_old <= 365 * 5:
             recency_score = 0.8

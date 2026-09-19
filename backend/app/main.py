@@ -1,27 +1,40 @@
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import get_settings
 from app.database import init_db
-from app.routers import chat, documents, admin
-import os
+from app.routers import admin, chat, documents
 
-app = FastAPI(title="RAG College Helpdesk", version="1.0.0")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    os.makedirs(os.getenv("UPLOAD_DIR", "./uploads"), exist_ok=True)
+    yield
+
+
+app = FastAPI(
+    title="RAG College Helpdesk",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(chat.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
-    os.makedirs("./uploads", exist_ok=True)
 
 @app.get("/")
 def read_root():

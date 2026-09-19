@@ -53,7 +53,8 @@ const LoginPage = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="admin"
+                placeholder="Enter username"
+                autoComplete="username"
               />
             </div>
           </div>
@@ -70,7 +71,8 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="••••••••"
+                placeholder="Enter password"
+                autoComplete="current-password"
               />
             </div>
           </div>

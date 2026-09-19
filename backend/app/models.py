@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import Optional, List
 
@@ -33,8 +33,8 @@ class DocumentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ChatRequest(BaseModel):
-    question: str
-    session_id: Optional[str] = None
+    question: str = Field(min_length=1, max_length=2000)
+    session_id: Optional[str] = Field(default=None, max_length=100)
 
 class SourceEvidence(BaseModel):
     document_name: str

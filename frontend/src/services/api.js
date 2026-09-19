@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Add a request interceptor to include the auth token
+// Attach the admin session token to every request when present.
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -15,7 +15,19 @@ api.interceptors.request.use(
     }
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// If the session is invalid or expired, clear it and send the user back to login.
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   }
 );
