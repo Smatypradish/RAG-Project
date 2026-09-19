@@ -22,7 +22,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && localStorage.getItem('token')) {
+    const isAuthError = error.response?.status === 401;
+    const isLoginRequest = error.config?.url?.includes('/admin/login');
+    if (isAuthError && !isLoginRequest) {
       localStorage.removeItem('token');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

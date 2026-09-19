@@ -16,11 +16,15 @@ const LoginPage = () => {
     setLoading(true);
     
     try {
-      const data = await adminLogin(username, password);
+      const data = await adminLogin(username.trim(), password);
       localStorage.setItem('token', data.token);
       navigate('/admin');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid username or password');
+      if (!err.response) {
+        setError('Cannot reach the server. Make sure the backend is running (uvicorn on port 8000).');
+      } else {
+        setError(err.response?.data?.detail || 'Invalid username or password');
+      }
     } finally {
       setLoading(false);
     }
