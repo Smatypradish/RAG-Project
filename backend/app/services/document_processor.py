@@ -57,17 +57,32 @@ def chunk_text(pages_text: List[Dict[str, Any]], chunk_size: int = 800, overlap:
         start = 0
         while start < len(text):
             end = min(start + chunk_size, len(text))
-            chunk_str = text[start:end]
-            chunks.append({
-                "chunk_text": chunk_str,
-                "metadata": {
-                    "doc_id": doc_id or 0,
-                    "doc_name": doc_name or "Unknown",
-                    "page_number": page["page"],
-                    "chunk_index": chunk_index,
-                    "section_hint": current_section
-                }
-            })
-            chunk_index += 1
-            start += (chunk_size - overlap)
+            # Snap the end to a word boundary so chunks never cut words mid-way
+            if end < len(text):
+                boundary = text.rfind(" ", start, end)
+                if boundary > start + chunk_size // 2:
+                    end = boundary
+            chunk_str = text[start:end].strip()
+            if chunk_str:
+                chunks.append({
+                    "chunk_text": chunk_str,
+                    "metadata": {
+                        "doc_id": doc_id or 0,
+                        "doc_name": doc_name or "Unknown",
+                        "page_number": page["page"],
+                        "chunk_index": chunk_index,
+                        "section_hint": current_section
+                    }
+                })
+                chunk_index += 1
+            # Next start: `overlap` chars before end, snapped forward to a word start
+            next_start = end - overlap
+            if next_start <= start:
+                next_start = end  # guarantee progress
+            else:
+                # move forward to the next space so we don't start mid-word
+                boundary = text.find(" ", next_start, min(next_start + 30, len(text)))
+                if boundary != -1:
+                    next_start = boundary + 1
+            start = next_start
     return chunks

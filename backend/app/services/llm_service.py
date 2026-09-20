@@ -90,12 +90,12 @@ class LLMService:
         if not unique_points:
             return "The required information was not found in the available documents."
 
-        answer = "**Direct Summary:**\n"
+        answer = "Direct Summary:\n"
         for p in unique_points:
-            answer += f"• {p}.\n"
+            answer += f"- {p}.\n"
             
         if conflicts_str.strip():
-            answer += f"\n**Policy Notice:**\n• {conflicts_str.strip()}\n"
+            answer += f"\nPolicy Notice:\n- {conflicts_str.strip()}\n"
             
         return answer
 

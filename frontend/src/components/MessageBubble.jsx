@@ -5,6 +5,70 @@ import SourceCard from './SourceCard';
 const MessageBubble = ({ message }) => {
   const [showConflicts, setShowConflicts] = useState(false);
 
+  // Render the answer as clean structured text: headings for "**...:**" lines,
+  // bullet lists for "- "/"• " lines, plain paragraphs otherwise.
+  const renderAnswer = (text) => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    const blocks = [];
+    let list = [];
+    let key = 0;
+
+    const flushList = () => {
+      if (list.length === 0) return;
+      blocks.push(
+        <ul key={`ul-${key++}`} className="my-2 space-y-1.5 pl-1">
+          {list.map((item, i) => (
+            <li key={i} className="flex gap-2 text-sm leading-6 text-[#27443d]">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#3a7463]" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      list = [];
+    };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { flushList(); continue; }
+
+      const headingMatch = line.match(/^\*\*(.+?)\*\*:?$/);
+      if (headingMatch) {
+        flushList();
+        blocks.push(
+          <p key={`h-${key++}`} className="mt-3 text-[13px] font-bold text-[#14322f] first:mt-0">
+            {headingMatch[1]}
+          </p>
+        );
+        continue;
+      }
+
+      if (line.endsWith(':') && line.length < 60 && !line.startsWith('-') && !line.startsWith('•')) {
+        flushList();
+        blocks.push(
+          <p key={`h2-${key++}`} className="mt-3 text-[13px] font-bold text-[#14322f] first:mt-0">{line}</p>
+        );
+        continue;
+      }
+
+      const bulletMatch = line.match(/^[-•*]\s+(.+)/);
+      if (bulletMatch) {
+        list.push(bulletMatch[1].replace(/\*\*(.+?)\*\*/g, '$1'));
+        continue;
+      }
+
+      flushList();
+      blocks.push(
+        <p key={`p-${key++}`} className="my-1.5 text-sm leading-6 text-[#27443d]">
+          {line.replace(/\*\*(.+?)\*\*/g, '$1')}
+        </p>
+      );
+    }
+    flushList();
+    return blocks;
+  };
+
   const getConfidenceDetails = (type) => {
     const key = (type || '').toLowerCase();
     switch (key) {
@@ -50,7 +114,11 @@ const MessageBubble = ({ message }) => {
             </span>
           )}
         </div>
-        <p className={`whitespace-pre-wrap text-sm leading-6 ${message.isError ? 'text-[#a33e35]' : 'text-[#27443d]'}`}>{message.text}</p>
+        <div className={message.isError ? 'text-sm text-[#a33e35]' : ''}>
+          {message.isError
+            ? <p className="whitespace-pre-wrap leading-6">{message.text}</p>
+            : renderAnswer(message.text)}
+        </div>
 
         {((message.conflicts && message.conflicts.length > 0) || (message.sources && message.sources.length > 0)) && (
           <div className="mt-5 border-t border-[#e6ede9] pt-4">
@@ -79,7 +147,7 @@ const MessageBubble = ({ message }) => {
               <div className="mt-4">
                 <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.13em] text-[#70877e]">Supporting Official Documents</h3>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {message.sources.map((source, index) => <SourceCard key={index} source={source} />)}
+                  {Array.from(new Map(message.sources.map((s) => [`${s.document_id}-${s.page_number}`, s])).values()).map((source, index) => <SourceCard key={index} source={source} />)}
                 </div>
               </div>
             )}
