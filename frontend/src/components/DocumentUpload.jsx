@@ -41,9 +41,22 @@ const DocumentUpload = ({ onUploadSuccess }) => {
 
     const data = new FormData();
     data.append('file', file);
-    Object.keys(formData).forEach(key => {
-      if (formData[key]) {
-        data.append(key, formData[key]);
+    // Map frontend field names to the backend's expected form fields.
+    const fieldMap = {
+      category: 'category',
+      authority_level: 'authority_level',
+      version: 'version',
+      effective_date: 'effective_date',
+      expiry_date: 'expiry_date',
+      status: 'status',
+      supersedes_id: 'supersedes_document_id',
+      revision_reason: 'revision_reason',
+    };
+    Object.entries(fieldMap).forEach(([formKey, apiKey]) => {
+      const value = formData[formKey];
+      // Skip empty optional fields — sending "" breaks FastAPI date/int parsing (422).
+      if (value !== '' && value !== null && value !== undefined) {
+        data.append(apiKey, value);
       }
     });
 
