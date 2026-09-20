@@ -57,46 +57,63 @@ class LLMService:
             self.llm = None
 
     def _fallback_extractive_answer(self, prompt: str, context: str, conflicts_str: str = "") -> str:
-        """Deterministic structural fallback when no LLM API key is configured or offline."""
+        """Deterministic, question-aware fallback: short relevant points only."""
         import re
         if not context.strip():
             return "The required information was not found in the available documents."
-        
-        points = []
+
+        # Keywords from the student's question (ignore common stop words)
+        stop_words = {
+            "what", "is", "the", "a", "an", "for", "of", "to", "in", "on", "how",
+            "are", "was", "were", "do", "does", "did", "can", "i", "my", "me",
+            "and", "or", "by", "with", "from", "at", "be", "been", "it", "this",
+            "that", "these", "those", "there", "their", "they", "we", "you", "your",
+        }
+        keywords = {
+            w for w in re.findall(r"[a-zA-Z]{3,}", prompt.lower())
+            if w not in stop_words
+        }
+
+        def relevance(sentence: str) -> int:
+            words = set(re.findall(r"[a-zA-Z]{3,}", sentence.lower()))
+            return len(keywords & words)
+
+        # Split context into sentences
+        sentences = []
         for block in context.split("\n\n"):
-            lines = [l.strip() for l in block.split("\n") if l.strip()]
-            if len(lines) >= 2:
-                content = " ".join(lines[1:])
-                
-                # Split sentences cleanly without breaking numbers like 9.0 or 1.1
-                sentences = re.split(r'(?<=[a-zA-Z\)])\.\s+(?=[A-Z0-9])', content)
-                for s in sentences:
-                    s_clean = s.strip()
-                    if s_clean.endswith('.'):
-                        s_clean = s_clean[:-1]
-                    if len(s_clean) > 20 and not s_clean.isupper():
-                        points.append(s_clean)
-            elif lines and len(lines[0]) > 20:
-                points.append(lines[0])
-                
-        # Deduplicate while preserving order
-        unique_points = []
-        for p in points:
-            if not any(p[:35].lower() in up.lower() for up in unique_points):
-                unique_points.append(p)
-            if len(unique_points) >= 4:
+            content = " ".join(l.strip() for l in block.split("\n") if l.strip())
+            # Drop the "[Doc: ...]" header line if present
+            if content.startswith("["):
+                content = content.split("]", 1)[-1]
+            for s in re.split(r'(?<=[a-zA-Z\)])\.\s+(?=[A-Z0-9])', content):
+                s_clean = s.strip().rstrip(".")
+                if len(s_clean) > 25 and not s_clean.isupper():
+                    sentences.append(s_clean)
+
+        # Keep only sentences related to the question, most relevant first
+        scored = sorted(sentences, key=relevance, reverse=True)
+        relevant = [s for s in scored if relevance(s) > 0]
+
+        # Short, clear points: deduplicate, cap length, max 3
+        points = []
+        for s in relevant:
+            if len(s) > 160:
+                s = s[:157].rsplit(" ", 1)[0] + "..."
+            if not any(s[:30].lower() in p.lower() or p[:30].lower() in s.lower() for p in points):
+                points.append(s)
+            if len(points) >= 3:
                 break
 
-        if not unique_points:
+        if not points:
             return "The required information was not found in the available documents."
 
-        answer = "Direct Summary:\n"
-        for p in unique_points:
+        answer = "Answer:\n"
+        for p in points:
             answer += f"- {p}.\n"
-            
+
         if conflicts_str.strip():
-            answer += f"\nPolicy Notice:\n- {conflicts_str.strip()}\n"
-            
+            answer += f"\nNote:\n- {conflicts_str.strip()}\n"
+
         return answer
 
     def generate(self, prompt: str, context: str, conflicts_str: str = "") -> str:
@@ -110,15 +127,10 @@ class LLMService:
 Answer the student's question based ONLY on the provided context documents.
 
 RESPONSE RULES:
-1. Keep the answer STRUCTURAL, SHORT, and CLEAR.
-2. DO NOT write long paragraphs or vague filler words.
-3. Use this structure:
-   - **Direct Answer:** 1 short sentence directly answering the question.
-   - **Key Rules / Details:**
-     • Use bullet points for specific numbers, percentages, dates, or criteria.
-     • Keep each bullet point to 1-2 lines.
-   - **Important Note:** (Only if there are penalties, fees, deadlines, or exceptions).
-4. If there is a policy conflict or revision, state the latest active rule clearly.
+1. Answer in at most 3 short bullet points. Each bullet must be under 20 words.
+2. Start with one direct sentence answering the question. No introductions, no filler.
+3. Only include information that directly answers the student's question — nothing else.
+4. If there is a policy conflict or revision, state the latest active rule clearly in one line.
 5. If the required information is not found in the documents, reply with exactly: 'The required information was not found in the available documents.'
 
 Context Documents:
