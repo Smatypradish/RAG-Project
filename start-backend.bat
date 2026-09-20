@@ -8,10 +8,10 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8000 ^| findstr LISTENING') 
 )
 
 echo.
-echo Starting backend server...
+echo Starting backend server (accessible on your network)...
 echo First start can take up to 60 seconds. Wait for "Application startup complete."
 echo.
-uvicorn app.main:app --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 echo.
 echo ===================================================
